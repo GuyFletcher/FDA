@@ -1,10 +1,12 @@
 package com.fletcherhart.fdaapp;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -21,9 +23,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
-import android.content.Context;
+import java.util.List;
+import org.json.*;
+
+import android.support.v7.widget.RecyclerView;
 
 /**
  * Created by Fletcher on 6/20/2017.
@@ -34,14 +37,20 @@ public class MainFragment extends Fragment {
     private EditText mSearch;
     private TextView mText;
     private static String urlFDA = "https://api.fda.gov/drug/event.json?limit=1";
+    private String mJSON;
     public ProgressDialog pd;
-    Context context;
+    private RecyclerView mRecycle;
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
+        mRecycle = (RecyclerView) view.findViewById(R.id.recycler_view);
+        mRecycle.setLayoutManager(new LinearLayoutManager(getActivity()));
+
         mSearch = (EditText) view.findViewById(R.id.search);
         mText = (TextView) view.findViewById(R.id.result);
+
+
 
 
         mSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
@@ -49,7 +58,13 @@ public class MainFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
 
-                    new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1");
+                    new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1&search=fatigue");
+                    /*
+                    try {
+                        mText.setText(parse());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }*/
 
                     //submit_btn.performClick();
                     return true;
@@ -62,29 +77,28 @@ public class MainFragment extends Fragment {
         return view;
     }
 
+    private String parse() throws JSONException {
 
-    public static String fetchData(String search) throws IOException
-    {
+        JSONObject obj = new JSONObject(mJSON);
 
-        String[] data = search.split(" ");
+        JSONArray arr = obj.getJSONArray("results");
 
-        URL url = new URL(urlFDA);
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-        InputStream is = conn.getInputStream();
+        String genericName = "";
+        String brand;
+        String manufacturer;
+        String useage;
+        String EPC;
 
-        BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-
-        StringBuilder sb = new StringBuilder();
-        int cp;
-        while ((cp = rd.read()) != -1) {
-            sb.append((char) cp);
+        for (int i = 0; i < arr.length(); i++)
+        {
+            genericName = arr.getJSONObject(i).getString("generic_name");
+            System.out.println(genericName);
         }
 
-
-        return sb.toString();
+        return genericName;
     }
 
+    //https://stackoverflow.com/questions/33229869/get-json-data-from-url-using-android
     private class JsonTask extends AsyncTask<String, String, String> {
 
         protected void onPreExecute() {
@@ -149,7 +163,62 @@ public class MainFragment extends Fragment {
             if (pd.isShowing()){
                 pd.dismiss();
             }
-            mText.setText(result);
+            mJSON = result;
+        }
+    }
+
+    private class ResultHolder extends RecyclerView.ViewHolder
+            implements View.OnClickListener {
+
+        private Drug mDrug;
+
+        public ResultHolder(View itemView) {
+            super(itemView);
+            itemView.setOnClickListener(this);
+
+           //Text goes here
+        }
+
+        public void bindResult(Drug drug) {
+            mDrug = drug;
+        }
+
+        @Override
+        public void onClick(View v) {
+            Intent intent = ResultPagerActivity.newIntent(getActivity(), mDrug.getId());
+            startActivity(intent);
+        }
+    }
+
+
+    private class AdapterFDA extends RecyclerView.Adapter<ResultHolder> {
+
+        private List<Drug> mDrugs;
+
+        public AdapterFDA(List<Drug> drugs) {
+            mDrugs = drugs;
+        }
+
+        @Override
+        public ResultHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
+            View view = layoutInflater.inflate(R.layout.list_item_result, parent, false);
+            return new ResultHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(ResultHolder holder, int position) {
+            Drug Drug = mDrugs.get(position);
+            holder.bindResult(Drug);
+        }
+
+        @Override
+        public int getItemCount() {
+            return mDrugs.size();
+        }
+
+        public void setResults(List<Drug> drugs) {
+            mDrugs = drugs;
         }
     }
 }
