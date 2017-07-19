@@ -4,14 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:hint="Search"
-        android:id="@+id/list_search"
-        android:inputType="text"
-        android:imeOptions="actionDone"/>
-
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

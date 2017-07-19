@@ -40,16 +40,40 @@ public class MainFragment extends Fragment {
     public ProgressDialog pd;
     private RecyclerView mRecycle;
     private AdapterFDA mAdapter;
+    private EditText mSearch;
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
-        System.out.println("Start");
+        mSearch = (EditText) view.findViewById(R.id.list_search);
+
+        mSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+
+                  /* new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1&search=fatigue");
+
+                    try {
+                        parseAndAdd();
+                    }
+                    catch(JSONException e)
+                    {
+                        System.out.println(e);
+                    }*/
+
+                    updateUI();
+                    //submit_btn.performClick();
+                    return true;
+                }
+                return false;
+            }
+        });
+
 
         mRecycle = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecycle.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        updateUI();
 
         return view;
     }
@@ -163,38 +187,14 @@ public class MainFragment extends Fragment {
             implements View.OnClickListener {
 
         private Drug mDrug;
-        private EditText mSearch;
         private TextView mGeneric;
 
         public ResultHolder(View itemView) {
             super(itemView);
             itemView.setOnClickListener(this);
 
-            mSearch = (EditText) itemView.findViewById(R.id.list_search);
+
             mGeneric = (TextView) itemView.findViewById(R.id.list_drug);
-
-          /*  mSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_DONE) {
-
-                        new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1&search=fatigue");
-
-                        try {
-                            parseAndAdd();
-                        }
-                        catch(JSONException e)
-                        {
-                            System.out.println(e);
-                        }
-
-                        updateUI();
-                        //submit_btn.performClick();
-                        return true;
-                    }
-                    return false;
-                }
-            });*/
 
         }
 
