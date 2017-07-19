@@ -34,50 +34,27 @@ import android.support.v7.widget.RecyclerView;
 
 public class MainFragment extends Fragment {
 
-    private EditText mSearch;
-    private TextView mText;
+
     private static String urlFDA = "https://api.fda.gov/drug/event.json?limit=1";
     private String mJSON;
     public ProgressDialog pd;
     private RecyclerView mRecycle;
+    private AdapterFDA mAdapter;
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
+        System.out.println("Start");
+
         mRecycle = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecycle.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        mSearch = (EditText) view.findViewById(R.id.search);
-        mText = (TextView) view.findViewById(R.id.result);
-
-
-
-
-        mSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-
-                    new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1&search=fatigue");
-                    /*
-                    try {
-                        mText.setText(parse());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }*/
-
-                    //submit_btn.performClick();
-                    return true;
-                }
-                return false;
-            }
-        });
-
+        updateUI();
 
         return view;
     }
 
-    private String parse() throws JSONException {
+    private String parseAndAdd() throws JSONException {
 
         JSONObject obj = new JSONObject(mJSON);
 
@@ -96,6 +73,21 @@ public class MainFragment extends Fragment {
         }
 
         return genericName;
+    }
+
+    private void updateUI() {
+        DrugLab drugLab = DrugLab.get(getActivity());
+        List<Drug> drugs = drugLab.getDrugs();
+
+        System.out.println("UpdateUI");
+
+        if (mAdapter == null) {
+            mAdapter = new AdapterFDA(drugs);
+            mRecycle.setAdapter(mAdapter);
+        } else {
+            mAdapter.setDrugs(drugs);
+            mAdapter.notifyDataSetChanged();
+        }
     }
 
     //https://stackoverflow.com/questions/33229869/get-json-data-from-url-using-android
@@ -171,21 +163,50 @@ public class MainFragment extends Fragment {
             implements View.OnClickListener {
 
         private Drug mDrug;
+        private EditText mSearch;
+        private TextView mGeneric;
 
         public ResultHolder(View itemView) {
             super(itemView);
             itemView.setOnClickListener(this);
 
-           //Text goes here
+            mSearch = (EditText) itemView.findViewById(R.id.list_search);
+            mGeneric = (TextView) itemView.findViewById(R.id.list_drug);
+
+          /*  mSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+
+                        new JsonTask().execute("https://api.fda.gov/drug/event.json?limit=1&search=fatigue");
+
+                        try {
+                            parseAndAdd();
+                        }
+                        catch(JSONException e)
+                        {
+                            System.out.println(e);
+                        }
+
+                        updateUI();
+                        //submit_btn.performClick();
+                        return true;
+                    }
+                    return false;
+                }
+            });*/
+
         }
 
-        public void bindResult(Drug drug) {
+        public void bindDrug(Drug drug)
+        {
             mDrug = drug;
+            mGeneric.setText(mDrug.getGenericName());
         }
 
         @Override
         public void onClick(View v) {
-            Intent intent = ResultPagerActivity.newIntent(getActivity(), mDrug.getId());
+            Intent intent = DrugPageActivity.newIntent(getActivity(), mDrug.getId());
             startActivity(intent);
         }
     }
@@ -202,14 +223,14 @@ public class MainFragment extends Fragment {
         @Override
         public ResultHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
-            View view = layoutInflater.inflate(R.layout.list_item_result, parent, false);
+            View view = layoutInflater.inflate(R.layout.list_item_drug, parent, false);
             return new ResultHolder(view);
         }
 
         @Override
         public void onBindViewHolder(ResultHolder holder, int position) {
-            Drug Drug = mDrugs.get(position);
-            holder.bindResult(Drug);
+            Drug drug = mDrugs.get(position);
+            holder.bindDrug(drug);
         }
 
         @Override
@@ -217,7 +238,7 @@ public class MainFragment extends Fragment {
             return mDrugs.size();
         }
 
-        public void setResults(List<Drug> drugs) {
+        public void setDrugs(List<Drug> drugs) {
             mDrugs = drugs;
         }
     }
